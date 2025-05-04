@@ -1,0 +1,40 @@
+Data does not always come in its final processed form that is required for training machine learning algorithms. We use transforms to perform some manipulation of the data and make it suitable for training.
+
+
+TorchVision:
+
+torchvision.transforms module offers widely used transforms out of the box. TorchVision datasets come with two parameters that accept callables containing the transformation logic:
+
+transform: modifies input features
+----------
+
+target_transform: modifies labels
+----------------
+
+_____________________________________________________________________________________________________________________
+
+Eg: FashionMNIST features come in PIL image format, and the labels are integers. We need to turn these features into
+--  normalized tensors. The labels should be "one-hot" encoded tensors. We'll use ToTensor and Lambda
+
+import torch
+from torchvision import datasets
+from torchvision.transforms import ToTensor, Lambda
+
+ds = datasets.FashionMNIST(
+    root="data",
+    train=True,
+    download=True,
+    transform=ToTensor(),
+    target_transform=Lambda(lambda y: torch.zeros(10, dtype=torch.float).scatter_(0, torch.tensor(y), value=1))
+)
+
+
+ToTensor: converts PIL image or ndarray into FloatTensor, and scales image's pixel intensity to fit in range [0,1]
+--------
+
+Lambda: works like python lambda functions. The one above turns the label integer into a one-hot encoded tensor.
+------  it first creates a zero tensor of size 10 (no. of labels we have), then calls scatter_, which assigns a 
+        value=1 for the index corresponding to the label given.
+
+		target_transform = Lambda(lambda y: torch.zeros(
+    			10, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y), value=1))

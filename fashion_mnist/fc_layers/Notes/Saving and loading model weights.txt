@@ -1,0 +1,39 @@
+Saving only weights
+-------------------
+
+
+PyTorch models store the learned parameters in an internal state dictionary, called state_dict. These can be 
+persisted via the torch.save method:
+
+>>> torch.save(model.state_dict(), 'model_weights.pth')
+
+
+Loading only weights
+--------------------
+
+It's considered best practice to only save and load weights. So when loading you first need to recreate the model
+architecture. Once you have your model, simply load weights using:
+
+>>> model.load_state_dict(torch.load("model_weights.pth", weights_only=True))
+
+
+
+* If you are in a different directory, you need to use the absolute path:
+
+>>> model.load_state_dict(torch.load("/path/to/model_weights.pth"))
+_____________________________________________________________________________________________________________________
+
+
+Saving and loading weights + structure
+--------------------------------------
+
+If for some reason we want to save the model architecture + weights, we can use:
+
+>>> torch.save(model, 'model.pth')
+
+
+Again, this is not best practice. To load, we use:
+
+>>> model = torch.load("model.pth", weights_only=False)
+
+* Like last time, if we're in a different working directory, we can use the absolute path instead.

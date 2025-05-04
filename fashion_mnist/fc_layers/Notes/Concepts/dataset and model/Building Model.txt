@@ -1,0 +1,95 @@
+torch.nn: provides all building blocks needed for a neural network. every module in PyTorch subclasses nn.Module
+--------
+
+___________________________________________________________________________________________________________________
+
+Eg: Let's build a nn to classify images in FashionMNIST. Note: we're not training the model yet.
+--
+
+import os
+import torch
+from torch import nn
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+
+
+Step 1: We want to train our model using an accelerator such as CUDA, MPS, MTIA, or XPU. This conditional checks if 
+------  such accelerator is available, and otherwise uses the CPU.
+
+device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
+
+
+Step 2: We define our neural network by subclassing nn.Module, and initialize the neural network layers in
+------  __init__. Every nn.Module subclass implements the operations on input data in the forward method.
+
+class NeuralNetwork(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(28*28, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 10),
+        )
+
+    def forward(self, x):
+        x = self.flatten(x)
+        logits = self.linear_relu_stack(x)
+        return logits
+
+
+
+
+breakdown
+---------
+
+super(): inherits characteristics from nn.Module that involve debugging, tracking layers and parameters, and
+         registering the model in PyTorch's computational graph. it's the super, like superintendent
+
+flatten: image inputs have form (batch_size, color channels, dim1, dim2). In this case, we have grayscale images
+         with dimensions 28x28. So our input has form (batch_size, 1, 28, 28). flatten converts this to
+         (batch_size, 28*28). so a 2D vector with batch number 1, 2, etc, each a list with one entry for each of 
+         the 784 pixels. If we had RGB, input is of form (batch_size, 3, 28, 28), and flatten would convert it to 
+         (batch_size, 3*28*28), etc. 
+
+forward: NEVER call this explicitly. nn.Module is designed to call this method automatically. It just flattens the
+         images then passes them through the layer sequential. We get logits that we have to convert to 
+         probabilities using softmax. 
+
+
+
+Step 3: let's look at the model and pass it a random input
+------
+
+model = NeuralNetwork().to(device)
+print(model)
+
+X = torch.rand(1, 28, 28, device=device)
+logits = model(X)
+
+
+
+Step 4: We pass the logits, which are raw values in (-inf, inf), to the Softmax module. This module scales them
+------- to values in [0,1], representing our prediction probabilities for each class. the dim parameter indicates
+        the dimension along which all the probabilities should sum up to 1. Recall, our output has form 
+        (batch_size, logits). so setting dim=1 means we want probabilities for each batch to add up to 1. we're
+        going to pick the maximum probability class for each batch
+
+softmax = nn.Softmax(dim=1)
+pred_probab = softmax(logits)
+y_pred = pred_probab.argmax(1)
+print(f"Predicted class: {y_pred}")
+
+___________________________________________________________________________________________________________________
+
+Model parameters: The model hasn't been trained yet, so it's initialized with random weights and biases. The
+----------------  biases are just the constants added for each linear equation. y = wx + b. We can access
+                  the models layers and each of the layers' weights and biases
+
+print(f"Model structure: {model}\n\n")
+
+for name, param in model.named_parameters():
+    print(f"Layer: {name} | Size: {param.size()} | Values: {param[:2]} \n")
+

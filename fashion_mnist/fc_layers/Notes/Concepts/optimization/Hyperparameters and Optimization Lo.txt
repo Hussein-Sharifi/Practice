@@ -1,0 +1,39 @@
+Hyperparameters and Optimization Loop
+-------------------------------------
+
+
+
+Hyperparameters: these are parameters like number of epochs, batch size, and learning rate, which affects model
+---------------  training and convergence rates. learning rate is the step size we take in the direction of the
+                 loss's gradient. 
+
+Optimization Loop: once we set our hyperparameters, we begin our training loop. Each iteration of optimization of the
+-----------------  model's parameters is called an epoch
+
+Each epoch consists of two parts:
+
+Train Loop: iterate over training dataset and try to converge to optimal parameters
+Validation/test loop: iterate over the test dataset to check if model performance is improving. Remember to keep 
+                      test and train data separate so the model doesn't get a peek and overfit the data. 
+
+
+
+
+____________________________________________________________________________________________________________________
+
+
+
+Optimizers: optimization algorithms that define how the model's parameters are updated. There are many types of 
+----------  optimizers, such as ADAM, RMSProp, and, in this case, SGF (Stochastic Gradient Descent). Here is a list:
+	    https://pytorch.org/docs/stable/optim.html
+
+how it works: inside the training loop, the optimization happens in three steps:
+
+1) Call optimizer.zero_grad() to reset the gradients of model parameters. Gradients by default add up. We do this
+in case we want to process the dataset in batches and want to add up the gradient. But we need to prevent double
+counting on the next iteration, so we explicitly zero them at each iteration.
+
+2) Backpropagate the prediction loss with a call to loss.backward(). PyTorch deposits the gradients of the loss 
+w.r.t. each parameter.
+
+3) we call optimizer.step() to adjust the parameters by the gradients collected in the backward pass

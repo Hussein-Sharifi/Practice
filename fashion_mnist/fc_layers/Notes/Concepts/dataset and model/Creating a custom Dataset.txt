@@ -1,0 +1,75 @@
+We'll be creating a Dataset class, which needs three functions: __init__, __len__, and __getitem__. There will also
+be specifics regarding the dataset. For FahsionMNIST, images are stored in img_dir, and labels are stored separately in the CSV file annotations_file. So we'll have to import OS to extract and pair up images with their labels. We'll
+discuss each of these functions after eg. 
+
+
+Dataset preparation
+-------------------
+
+import os
+import pandas as pd
+from torchvision.io import read_image
+from torch.utils.data import Dataset
+
+class CustomImageDataset(Dataset):
+    def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
+        self.img_labels = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.transform = transform
+        self.target_transform = target_transform
+
+    def __len__(self):
+        return len(self.img_labels)
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
+        image = read_image(img_path)
+        label = self.img_labels.iloc[idx, 1]
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        return image, label
+
+
+__init__:
+
+the labels.csv file contains a pandas df that looks like
+
+tshirt1.jpg, 0
+tshirt2.jpg, 0
+......
+ankleboot999.jpg, 9
+_____________________________________________________________________________________________________________________
+
+Data packing
+------------
+
+So we want to use this dataset to create mini batches that we can shuffle, manipulate, and train the model with. This
+will help us avoid overfitting. Luckily, we can easily use a premade API called DataLoader:
+
+
+
+from torch.utils.data import DataLoader
+import matplotlib as plt
+
+train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
+
+
+* DataLoader now has the dataset and can iterate through batches of the specified size. Since we are shuffling,
+  each iteration will return a new batch. To iterate next batch, we use:
+
+train_features, train_labels = next(iter(train_dataloader))
+
+
+* Let's examine information and plot of this batch:
+
+print(f"Features batch shape: {train_features.size()}")
+print(f"Labels batch shape: {train_labels.size()}")
+
+img = train_features[0].squeeze()
+label = train_labels[0]
+plt.imshow(img, cmap='gray')
+plt.show()
+print(f"Label: {label}")

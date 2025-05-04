@@ -1,0 +1,22 @@
+Train and Test loop questions
+
+
+
+* Generally need to set model in train or evaluation mode before the loop. Sometimes unnecessary but 
+  included in our example for best practices. 
+
+* why batch * batch_size + len(x): batch number starts at 0, so batch * batch_size is actually a step behind.
+  adding len(x), which is len of current batche, brings us up to speed. Why not just start batch count at 1?
+  we actually want to add len(x) in case final batch is smaller. This brings us up to correct count. 
+
+* (pred.argmax(1) == y).type(torch.float).sum().item(): 
+  
+ 1) pred.argmax(1): converts predictions to maximum prediction for each input. So we get a tensor with highest logits
+
+ 2) == y: tensors get compared entry-wise by this boolean operation. so each entry is compared to the associated 
+          correct label. we get a tensor with [True, False, False, True, ...etc]
+ 
+ 3) .type(torch.float).sum(): converts the boolean labels True/False to floats 1/0 then sums the entries up. We
+    get a tensor float representing number of correct guesses tensor(c)
+
+ 4) .item() converts tensor float to float number

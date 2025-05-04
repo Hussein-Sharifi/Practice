@@ -1,0 +1,113 @@
+Back Propagation: most common optimization method. Involves using the gradient of the loss function to find optimal
+----------------  step direction wrt parameters. Each cycle updated parameters with new step and loss function is
+                  compared. 
+
+torch.autograd: automated pytorch implementation of back propagation. 
+--------------
+___________________________________________________________________________________________________________________
+
+Conventions and terminology
+---------------------------
+
+
+* z = xW + b: With NNs, recall we're optimizing multiple linear functions. So W will be a matrix with multiple sets 
+of weights represented as column vectors. We optimize b and W to minimize loss function for a given input x.  
+
+* forward pass/ applying the function in the forward direction: z = torch.matmul(x, w) + b, i.e. computing the output z based on the input is known as a forward pass. 
+
+* frozen parameters: parameters that are no longer being tracked for optimization/gradient calculations.
+
+
+___________________________________________________________________________________________________________________
+
+FashionMNIST eg:
+---------------
+
+
+import torch
+x = torch.ones(5)
+y = torch.zeros(3)
+w = torch.randn(5, 3, requires_grad=True)  			 #requires_grad tells loss function to track these
+b = torch.randn(3, requires_grad=True)				  parameters for gradient computation
+z = torch.matmul(x, w) + b
+loss = torch.nn.functional.binary_cross_entropy_with_logits(z, y)  # This simply computes the loss. no optimization
+								     yet. 
+
+
+* loss will later know to track b and W for back propagation because we passed it z as input, which is computed using W and b. 
+
+
+print(f"Gradient function for z = {z.grad_fn}")
+print(f"Gradient function for loss = {loss.grad_fn}")
+
+
+* grad_fn: a property of tensors that stores a reference to the function that was used to compute it. not necessarily referring to gradients.
+
+
+loss.backward( retain_graph=True (optional) ) # Read about this below
+print(w.grad)   
+print(z.grad)   # shows the gradient for w and z.
+
+
+
+
+___________________________________________________________________________________________________________________
+
+In-Depth info
+
+loss.backward()
+--------------
+
+* This step is what actually triggers the back propagation step, which computes the gradients of all tensors that 
+have requires_grad=True. 
+
+* retain_graph=True: to save on memory, the computational graph is deleted after the loss.backward() step. The idea
+  is that once you have your next step direction, you don't need to save all the computations that led to it. But
+  this means you can't apply any more gradient calculations. This optional parameter allows you to keep the graph.
+  Why would you wanna do that?
+
+1) if you want to compute the second or higher order gradients (eg. Hessian)
+2) if you want to train your model using smaller batches of data using gradient accumulation.
+
+Gradient accumulation: Each input (or batch of inputs) may have a different gradient direction that suggests a
+--------------------   different way to optimize the weights. By accumulating gradients, we ensure that the most
+		       consistent direction across multiple batches dominates, leading to a more stable update.
+
+___________________________________________________________
+
+
+Frozen parameters
+-----------------
+
+* Once we're done optimizing certain parameters and no longer want to track them for gradient computations, we can 
+  apply the forward pass using
+
+
+with torch.no_grad():                                    z = torch.matmul(x, w) + b
+     z = torch.matmul(x, w) +b              or           z = z.detach()
+print(z.requires_grad)
+
+
+* Tensors have requires_grad attribute to show whether parameters are being tracked
+
+
+_____________________________________________________________
+
+autograd computational record
+-----------------------------
+
+
+* Our goal here is really to calculate the gradient of the loss function to optimize our model. the gradients of 
+  W and b are simply needed as part of that calculation. So autograd keeps a record of all the executed operations
+  along with the resulting new tensors in a directed acyclic graph (DAG):
+
+ """ Conceptually, autograd keeps a record of data (tensors) and all executed operations (along with the resulting
+     new tensors) in a directed acyclic graph (DAG) consisting of Function objects. In this DAG, leaves are the
+     input tensors, roots are the output tensors. By tracing this graph from roots to leaves, you can automatically
+     compute the gradients using the chain rule. """
+
+* After each .backward() call, autograd populates a new graph. 
+
+* IF instead of minimizing a scalar function (like loss, which just outputs a scalar), you're working with a
+  function with multiple outputs, you need to compute the jacobian product instead. Can read more about this here:
+  https://pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html
